@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mahaseel.AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #06080d;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+/* ── CANVAS ── */
+#bg {
+  position: fixed;
+  inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── NAV ── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2.2rem;
+  pointer-events: none;
+}
+.nav > * { pointer-events: all; }
+
+.ham {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 36px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  z-index: 300;
+}
+.ham-line {
+  display: block;
+  width: 100%;
+  height: 1.5px;
+  background: rgba(255,255,255,.72);
+  border-radius: 2px;
+  transition: transform .45s cubic-bezier(.16,1,.3,1), opacity .3s, width .3s;
+  transform-origin: center;
+}
+.ham.open .ham-line:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.ham.open .ham-line:nth-child(2) { opacity: 0; width: 0; }
+.ham.open .ham-line:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+.logo {
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.75);
+  text-decoration: none;
+}
+
+/* ── FULL-SCREEN MENU ── */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .6s cubic-bezier(.16,1,.3,1);
+}
+.menu-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* same canvas for menu bg — handled via JS */
+#menu-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+}
+
+.menu-close-zone {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.menu-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+}
+
+.menu-label {
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.25);
+  margin-bottom: 2.8rem;
+  animation: none;
+  pointer-events: none;
+}
+
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .2rem;
+  pointer-events: all;
+}
+
+.m-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  padding: .65rem 2rem;
+  border-radius: 16px;
+  transition: background .25s;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .5s, transform .5s, background .25s;
+  pointer-events: all;
+}
+.m-item:hover { background: rgba(255,255,255,.04); }
+
+/* stagger-in */
+.menu-overlay.open .m-item:nth-child(1) { opacity:1; transform:none; transition-delay:.08s; }
+.menu-overlay.open .m-item:nth-child(2) { opacity:1; transform:none; transition-delay:.14s; }
+.menu-overlay.open .m-item:nth-child(3) { opacity:1; transform:none; transition-delay:.20s; }
+.menu-overlay.open .m-item:nth-child(4) { opacity:1; transform:none; transition-delay:.26s; }
+.menu-overlay.open .m-item:nth-child(5) { opacity:1; transform:none; transition-delay:.32s; }
+
+.m-title {
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: rgba(255,255,255,.85);
+  line-height: 1.1;
+  transition: color .2s;
+}
+.m-item:hover .m-title { color: #fff; }
+
+.m-sub {
+  font-size: .78rem;
+  font-weight: 400;
+  color: rgba(255,255,255,.28);
+  margin-top: .25rem;
+  transition: color .2s;
+}
+.m-item:hover .m-sub { color: rgba(255,255,255,.5); }
+
+/* accent line on hover */
+.m-item::after {
+  content: '';
+  position: absolute;
+  left: 50%; bottom: 4px;
+  width: 0; height: 1px;
+  background: rgba(80,160,220,.6);
+  transform: translateX(-50%);
+  transition: width .3s cubic-bezier(.16,1,.3,1);
+  border-radius: 1px;
+}
+.m-item:hover::after { width: 60%; }
+
+.menu-footer-line {
+  margin-top: 3rem;
+  font-size: .65rem;
+  letter-spacing: .1em;
+  color: rgba(255,255,255,.18);
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity .5s .45s;
+  pointer-events: none;
+}
+.menu-overlay.open .menu-footer-line { opacity: 1; }
+
+/* ── HERO ── */
+.hero {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.5rem;
+  text-align: center;
+}
+
+.headline {
+  font-size: clamp(2.8rem, 7.5vw, 7rem);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1.02;
+  background: linear-gradient(180deg, #ffffff 50%, rgba(255,255,255,.5) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 2.5rem;
+  animation: rise .9s cubic-bezier(.16,1,.3,1) .15s both;
+}
+
+/* ── CHAT BAR ── */
+.chat-wrap {
+  width: 100%;
+  max-width: 640px;
+  animation: rise 1s cubic-bezier(.16,1,.3,1) .35s both;
+}
+
+.chat-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  padding: 0 8px 0 28px;
+  height: 62px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(80,160,220,.05),
+    0 20px 50px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  transition: border-color .3s, box-shadow .3s;
+}
+.chat-pill:focus-within {
+  border-color: rgba(80,160,220,.3);
+  box-shadow:
+    0 0 0 4px rgba(80,160,220,.07),
+    0 20px 50px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+.tw-layer {
+  position: absolute;
+  left: 28px; right: 90px;
+  top: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity .2s;
+}
+.tw-text {
+  font-size: .96rem;
+  color: rgba(255,255,255,.28);
+}
+.tw-cursor {
+  display: inline-block;
+  width: 2px; height: 1.05em;
+  background: rgba(80,160,220,.65);
+  margin-left: 2px;
+  vertical-align: middle;
+  border-radius: 1px;
+  animation: blink .85s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.chat-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: .96rem;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+}
+.chat-input::placeholder { color: transparent; }
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  z-index: 2;
+}
+.chat-btn {
+  width: 42px; height: 42px;
+  border: none; background: none;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  color: rgba(255,255,255,.32);
+  transition: background .2s, color .2s;
+}
+.chat-btn:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.6); }
+
+.send-btn {
+  width: 44px; height: 44px;
+  border: none; border-radius: 999px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.11);
+  color: rgba(255,255,255,.8);
+  transition: background .2s, transform .15s;
+}
+.send-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+.send-btn:active { transform: scale(.92); }
+
+@keyframes rise {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+@media(max-width:600px){
+  .nav { padding: 1rem 1.2rem; }
+  .m-title { font-size: clamp(1.6rem,8vw,2.4rem); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<!-- ── FULL-SCREEN MENU ── -->
+<div class="menu-overlay" id="menuOverlay">
+  <canvas id="menu-bg"></canvas>
+  <div class="menu-close-zone" id="closeZone"></div>
+
+  <div class="menu-content">
+    <p class="menu-label">Products</p>
+    <nav class="menu-items">
+      <a class="m-item" href="#">
+        <span class="m-title">Qamhawy</span>
+        <span class="m-sub">Smart wheat intelligence for Egyptian farmers</span>
+      </a>
+      <a class="m-item" href="#">
+        <span class="m-title">Mahaseel B2B</span>
+        <span class="m-sub">Agricultural trade platform for agribusiness</span>
+      </a>
+      <a class="m-item" href="#">
+        <span class="m-title">Mahaseel Shop</span>
+        <span class="m-sub">Farm inputs & supplies marketplace</span>
+      </a>
+      <a class="m-item" href="#">
+        <span class="m-title">Farm Analytics</span>
+        <span class="m-sub">AI-driven crop & soil insights</span>
+      </a>
+      <a class="m-item" href="#">
+        <span class="m-title">Market Intelligence</span>
+        <span class="m-sub">Real-time commodity pricing & trends</span>
+      </a>
+    </nav>
+    <p class="menu-footer-line">© 2025 Mahaseel.AI — Egypt's Agricultural AI Platform</p>
+  </div>
+</div>
+
+<!-- ── NAV ── -->
+<header class="nav">
+  <button class="ham" id="ham" aria-label="Menu">
+    <span class="ham-line"></span>
+    <span class="ham-line"></span>
+    <span class="ham-line"></span>
+  </button>
+  <a href="#" class="logo">Mahaseel.AI</a>
+</header>
+
+<!-- ── HERO ── -->
+<main class="hero">
+  <h1 class="headline">Ask Your Mahaseel AI</h1>
+
+  <div class="chat-wrap">
+    <div class="chat-pill">
+      <div class="tw-layer" id="twLayer">
+        <span class="tw-text" id="twText"></span>
+        <span class="tw-cursor"></span>
+      </div>
+      <input type="text" class="chat-input" id="chatInput" autocomplete="off"/>
+      <div class="chat-actions">
+        <button class="chat-btn" title="Attach">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+        <button class="send-btn" id="sendBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ═══════════════════════════════════════
+   SHARED STATE
+═══════════════════════════════════════ */
+let W = window.innerWidth, H = window.innerHeight;
+let mouseX = W / 2, mouseY = H / 2;
+let targetX = W / 2, targetY = H / 2;
+let smoothX = W / 2, smoothY = H / 2;
+
+window.addEventListener('mousemove', e => { targetX = e.clientX; targetY = e.clientY; });
+window.addEventListener('resize',    () => { W = window.innerWidth; H = window.innerHeight; });
+
+/* ═══════════════════════════════════════
+   NEURAL PARTICLE FIELD
+   — interconnected nodes that track mouse
+═══════════════════════════════════════ */
+const bgCanvas = document.getElementById('bg');
+const bgCtx    = bgCanvas.getContext('2d');
+
+function resizeBg() {
+  bgCanvas.width  = W;
+  bgCanvas.height = H;
+}
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+// Particles
+const PARTICLE_COUNT = 90;
+const particles = [];
+
+class Particle {
+  constructor() { this.reset(true); }
+  reset(init) {
+    this.x  = Math.random() * W;
+    this.y  = Math.random() * H;
+    this.vx = (Math.random() - .5) * .35;
+    this.vy = (Math.random() - .5) * .35;
+    this.r  = .8 + Math.random() * 1.4;
+    this.base = { x: this.x, y: this.y };
+    this.pulse = Math.random() * Math.PI * 2;
+  }
+  update() {
+    // drift
+    this.x += this.vx;
+    this.y += this.vy;
+    this.pulse += .012;
+
+    // subtle mouse pull — particles breathe toward cursor
+    const dx = smoothX - this.x;
+    const dy = smoothY - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const pullZone = 220;
+    if (dist < pullZone) {
+      const force = (1 - dist / pullZone) * .018;
+      this.x += dx * force;
+      this.y += dy * force;
+    }
+
+    // wrap
+    if (this.x < -10) this.x = W + 10;
+    if (this.x > W+10) this.x = -10;
+    if (this.y < -10) this.y = H + 10;
+    if (this.y > H+10) this.y = -10;
+  }
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+// Spotlight blobs (mouse-tracked)
+const blobs = [
+  { ox:.0,  oy:-.1, r:.7,  c:[35,120,195], a:.22, t:0,   ds:.00038 },
+  { ox:.0,  oy:-.0, r:.55, c:[18,95,175],  a:.14, t:1.3, ds:.00030 },
+];
+
+let t0Bg = null;
+
+function drawBg(ts) {
+  if (!t0Bg) t0Bg = ts;
+  const t = ts - t0Bg;
+
+  // smooth mouse
+  smoothX += (targetX - smoothX) * .055;
+  smoothY += (targetY - smoothY) * .055;
+
+  bgCanvas.width = W; // clears + resizes if needed
+  bgCtx.fillStyle = '#06080d';
+  bgCtx.fillRect(0, 0, W, H);
+
+  // ── SPOTLIGHT BLOBS (drifting + mouse) ──
+  blobs.forEach(b => {
+    const drift = Math.sin(t * b.ds + b.t) * .05;
+    // blend between top-center and mouse position
+    const bx = W * (.5 + b.ox) + (smoothX - W*.5) * .18 + drift * W;
+    const by = H * (.08 + b.oy) + (smoothY - H*.5) * .10;
+    const rad = b.r * Math.max(W, H);
+
+    const g = bgCtx.createRadialGradient(bx, by, 0, bx, by, rad);
+    g.addColorStop(0,   `rgba(${b.c},${b.a})`);
+    g.addColorStop(.4,  `rgba(${b.c},${b.a*.3})`);
+    g.addColorStop(1,   `rgba(${b.c},0)`);
+
+    bgCtx.beginPath();
+    bgCtx.ellipse(bx, by, rad * 1.3, rad * .8, 0, 0, Math.PI*2);
+    bgCtx.fillStyle = g;
+    bgCtx.fill();
+  });
+
+  // ── PARTICLES ──
+  particles.forEach(p => p.update());
+
+  // draw connections first
+  bgCtx.lineWidth = .5;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      const maxD = 110;
+      if (d < maxD) {
+        const alpha = (1 - d / maxD) * .18;
+        bgCtx.strokeStyle = `rgba(80,150,210,${alpha})`;
+        bgCtx.beginPath();
+        bgCtx.moveTo(particles[i].x, particles[i].y);
+        bgCtx.lineTo(particles[j].x, particles[j].y);
+        bgCtx.stroke();
+      }
+    }
+  }
+
+  // draw nodes
+  particles.forEach(p => {
+    // distance from mouse for glow
+    const dx = smoothX - p.x, dy = smoothY - p.y;
+    const d  = Math.sqrt(dx*dx + dy*dy);
+    const proximity = Math.max(0, 1 - d / 180);
+    const alpha = .18 + proximity * .55;
+    const radius = p.r * (1 + Math.sin(p.pulse) * .3 + proximity * .8);
+
+    bgCtx.beginPath();
+    bgCtx.arc(p.x, p.y, radius, 0, Math.PI*2);
+    bgCtx.fillStyle = `rgba(100,170,220,${alpha})`;
+    bgCtx.fill();
+
+    // glow halo near mouse
+    if (proximity > .3) {
+      bgCtx.beginPath();
+      bgCtx.arc(p.x, p.y, radius * 3, 0, Math.PI*2);
+      bgCtx.fillStyle = `rgba(60,130,200,${proximity * .08})`;
+      bgCtx.fill();
+    }
+  });
+
+  // mouse cursor glow
+  const mg = bgCtx.createRadialGradient(smoothX, smoothY, 0, smoothX, smoothY, 120);
+  mg.addColorStop(0,   'rgba(70,140,210,.12)');
+  mg.addColorStop(.5,  'rgba(40,100,180,.05)');
+  mg.addColorStop(1,   'rgba(0,0,0,0)');
+  bgCtx.beginPath();
+  bgCtx.arc(smoothX, smoothY, 120, 0, Math.PI*2);
+  bgCtx.fillStyle = mg;
+  bgCtx.fill();
+
+  // bottom vignette
+  const vg = bgCtx.createLinearGradient(0, H * .3, 0, H);
+  vg.addColorStop(0, 'rgba(6,8,13,0)');
+  vg.addColorStop(1, 'rgba(6,8,13,.92)');
+  bgCtx.fillStyle = vg;
+  bgCtx.fillRect(0, 0, W, H);
+
+  requestAnimationFrame(drawBg);
+}
+requestAnimationFrame(drawBg);
+
+
+/* ═══════════════════════════════════════
+   MENU — full-screen with its OWN canvas
+   (same visual language, brighter center)
+═══════════════════════════════════════ */
+const menuOverlay = document.getElementById('menuOverlay');
+const menuBgCanvas = document.getElementById('menu-bg');
+const menuCtx = menuBgCanvas.getContext('2d');
+let menuMouseX = W/2, menuMouseY = H/2;
+let menuSmoothX = W/2, menuSmoothY = H/2;
+let menuOpen = false;
+
+menuOverlay.addEventListener('mousemove', e => { menuMouseX = e.clientX; menuMouseY = e.clientY; });
+
+function resizeMenu() { menuBgCanvas.width = W; menuBgCanvas.height = H; }
+resizeMenu();
+window.addEventListener('resize', resizeMenu);
+
+let t0Menu = null;
+function drawMenu(ts) {
+  if (!t0Menu) t0Menu = ts;
+  const t = ts - t0Menu;
+
+  menuBgCanvas.width = W;
+  menuSmoothX += (menuMouseX - menuSmoothX) * .06;
+  menuSmoothY += (menuMouseY - menuSmoothY) * .06;
+
+  // Deep dark base
+  menuCtx.fillStyle = '#05070c';
+  menuCtx.fillRect(0, 0, W, H);
+
+  // Large center glow — tracks mouse
+  const cx = menuSmoothX, cy = menuSmoothY;
+  const r1 = Math.max(W, H) * .7;
+  const g1 = menuCtx.createRadialGradient(cx, cy, 0, cx, cy, r1);
+  g1.addColorStop(0,   'rgba(35,105,185,.28)');
+  g1.addColorStop(.35, 'rgba(25,80,160,.12)');
+  g1.addColorStop(1,   'rgba(0,0,0,0)');
+  menuCtx.beginPath();
+  menuCtx.arc(cx, cy, r1, 0, Math.PI*2);
+  menuCtx.fillStyle = g1;
+  menuCtx.fill();
+
+  // Secondary teal accent
+  const ax = W*.5 + Math.sin(t*.0004) * W*.06;
+  const ay = H*.5 + Math.cos(t*.0003) * H*.04;
+  const g2 = menuCtx.createRadialGradient(ax, ay, 0, ax, ay, W*.4);
+  g2.addColorStop(0,   'rgba(20,150,160,.1)');
+  g2.addColorStop(1,   'rgba(0,0,0,0)');
+  menuCtx.beginPath();
+  menuCtx.arc(ax, ay, W*.4, 0, Math.PI*2);
+  menuCtx.fillStyle = g2;
+  menuCtx.fill();
+
+  // Subtle grid lines
+  menuCtx.strokeStyle = 'rgba(255,255,255,.028)';
+  menuCtx.lineWidth = 1;
+  const gridSize = 80;
+  for (let x = 0; x < W; x += gridSize) {
+    menuCtx.beginPath();
+    menuCtx.moveTo(x, 0);
+    menuCtx.lineTo(x, H);
+    menuCtx.stroke();
+  }
+  for (let y = 0; y < H; y += gridSize) {
+    menuCtx.beginPath();
+    menuCtx.moveTo(0, y);
+    menuCtx.lineTo(W, y);
+    menuCtx.stroke();
+  }
+
+  // Cursor halo
+  const mg = menuCtx.createRadialGradient(menuSmoothX, menuSmoothY, 0, menuSmoothX, menuSmoothY, 160);
+  mg.addColorStop(0,  'rgba(80,160,220,.1)');
+  mg.addColorStop(1,  'rgba(0,0,0,0)');
+  menuCtx.beginPath();
+  menuCtx.arc(menuSmoothX, menuSmoothY, 160, 0, Math.PI*2);
+  menuCtx.fillStyle = mg;
+  menuCtx.fill();
+
+  // Edge vignette
+  const vg = menuCtx.createRadialGradient(W/2, H/2, H*.2, W/2, H/2, W*.8);
+  vg.addColorStop(0, 'rgba(5,7,12,0)');
+  vg.addColorStop(1, 'rgba(5,7,12,.7)');
+  menuCtx.fillStyle = vg;
+  menuCtx.fillRect(0, 0, W, H);
+
+  if (menuOpen) requestAnimationFrame(drawMenu);
+}
+
+
+/* ── MENU TOGGLE ── */
+const hamBtn  = document.getElementById('ham');
+const closeZone = document.getElementById('closeZone');
+
+function setMenu(open) {
+  menuOpen = open;
+  hamBtn.classList.toggle('open', open);
+  menuOverlay.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+  if (open) {
+    t0Menu = null;
+    menuMouseX = targetX; menuMouseY = targetY;
+    menuSmoothX = targetX; menuSmoothY = targetY;
+    requestAnimationFrame(drawMenu);
+  }
+}
+
+hamBtn.addEventListener('click', () => setMenu(!hamBtn.classList.contains('open')));
+closeZone.addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+
+// prevent close when clicking menu items
+document.querySelector('.menu-items').addEventListener('click', e => e.stopPropagation());
+
+
+/* ═══════════════════════════════════════
+   TYPEWRITER
+═══════════════════════════════════════ */
+const prompts = [
+  "Ask any thing....",
+  "What's the best crop for my Delta soil?",
+  "Show today's wheat prices in Egypt...",
+  "When should I irrigate my tomatoes?",
+  "Connect me with Mahaseel B2B traders",
+  "Analyze my soil report for fertilizer needs",
+];
+
+const twTextEl  = document.getElementById('twText');
+const twLayerEl = document.getElementById('twLayer');
+const inputEl   = document.getElementById('chatInput');
+
+let twIdx = 0, twCi = 0, twDel = false, twPaused = false;
+
+function typeStep() {
+  const cur = prompts[twIdx];
+  if (twPaused) {
+    twPaused = false; twDel = true;
+    setTimeout(typeStep, 60); return;
+  }
+  if (!twDel) {
+    twTextEl.textContent = cur.slice(0, ++twCi);
+    if (twCi === cur.length) { twPaused = true; setTimeout(typeStep, twIdx===0?1800:2200); }
+    else setTimeout(typeStep, 36 + Math.random()*24);
+  } else {
+    twTextEl.textContent = cur.slice(0, --twCi);
+    if (twCi === 0) { twDel=false; twIdx=(twIdx+1)%prompts.length; setTimeout(typeStep,300); }
+    else setTimeout(typeStep, 15);
+  }
+}
+
+inputEl.addEventListener('input', () => { twLayerEl.style.opacity = inputEl.value ? '0' : '1'; });
+inputEl.addEventListener('blur',  () => { if (!inputEl.value) twLayerEl.style.opacity = '1'; });
+setTimeout(typeStep, 700);
+
+/* SEND */
+function send() {
+  if (!inputEl.value.trim()) return;
+  const btn = document.getElementById('sendBtn');
+  btn.style.transform = 'scale(.88)';
+  setTimeout(() => btn.style.transform = '', 150);
+  inputEl.value = '';
+  twLayerEl.style.opacity = '1';
+  inputEl.focus();
+}
+document.getElementById('sendBtn').addEventListener('click', send);
+inputEl.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); send(); } });
+</script>
+</body>
+</html>
