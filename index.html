@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mahaseel.AI</title>
+<title>Qamhawy AI — Mahaseel</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -222,106 +222,161 @@ html, body {
   animation: rise .9s cubic-bezier(.16,1,.3,1) .15s both;
 }
 
-/* ── CHAT BAR ── */
+/* ── CHAT PANEL ── */
 .chat-wrap {
   width: 100%;
-  max-width: 640px;
+  max-width: 580px;
   animation: rise 1s cubic-bezier(.16,1,.3,1) .35s both;
 }
 
-.chat-pill {
+.chat-panel {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 22px;
+  backdrop-filter: blur(24px);
+  box-shadow:
+    0 0 0 1px rgba(80,160,220,.05),
+    0 24px 60px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow .4s, border-color .3s;
+}
+.chat-panel.has-messages {
+  border-color: rgba(80,160,220,.2);
+  box-shadow:
+    0 0 0 1px rgba(80,160,220,.08),
+    0 32px 80px rgba(0,0,0,.7),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* ── MESSAGES ── */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.1) transparent;
+  /* collapsed by default */
+  max-height: 0;
+  padding: 0 1.2rem;
+  transition: max-height .5s cubic-bezier(.16,1,.3,1),
+              padding   .5s cubic-bezier(.16,1,.3,1);
+}
+.chat-panel.has-messages .messages {
+  max-height: 340px;
+  padding: 1.2rem 1.2rem .7rem;
+}
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+
+/* user bubble */
+.msg-user {
+  align-self: flex-end;
+  background: rgba(80,160,220,.15);
+  border: 1px solid rgba(80,160,220,.25);
+  color: rgba(255,255,255,.92);
+  font-size: .84rem; font-weight: 400; line-height: 1.45;
+  padding: .5rem .95rem;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 78%;
+  animation: popIn .3s cubic-bezier(.16,1,.3,1);
+}
+/* ai bubble */
+.msg-ai {
+  align-self: flex-start;
+  color: rgba(255,255,255,.72);
+  font-size: .84rem; font-weight: 400; line-height: 1.65;
+  max-width: 95%;
+  animation: fadeUp .4s cubic-bezier(.16,1,.3,1);
+}
+/* typing dots */
+.typing-dots {
+  display: flex; gap: 4px; align-items: center; padding: .3rem 0;
+}
+.typing-dots span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(80,160,220,.5);
+  animation: tdBounce 1.2s ease infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: .18s; }
+.typing-dots span:nth-child(3) { animation-delay: .36s; }
+@keyframes tdBounce {
+  0%,60%,100% { transform:translateY(0); opacity:.4; }
+  30%          { transform:translateY(-5px); opacity:1; }
+}
+@keyframes popIn  { from{opacity:0;transform:scale(.92) translateY(6px)} to{opacity:1;transform:none} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+/* ── DIVIDER ── */
+.panel-divider {
+  height: 0;
+  background: rgba(255,255,255,.07);
+  margin: 0 1.2rem;
+  flex-shrink: 0;
+  transition: height .4s cubic-bezier(.16,1,.3,1);
+}
+.chat-panel.has-messages .panel-divider { height: 1px; }
+
+/* ── INPUT ROW ── */
+.input-row {
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,.055);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 999px;
-  padding: 0 8px 0 28px;
+  gap: 2px;
+  padding: 0 8px 0 22px;
   height: 62px;
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(80,160,220,.05),
-    0 20px 50px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.06);
-  transition: border-color .3s, box-shadow .3s;
-}
-.chat-pill:focus-within {
-  border-color: rgba(80,160,220,.3);
-  box-shadow:
-    0 0 0 4px rgba(80,160,220,.07),
-    0 20px 50px rgba(0,0,0,.6),
-    inset 0 1px 0 rgba(255,255,255,.07);
+  flex-shrink: 0;
 }
 
 .tw-layer {
   position: absolute;
-  left: 28px; right: 90px;
+  left: 22px; right: 90px;
   top: 0; bottom: 0;
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-  overflow: hidden;
-  white-space: nowrap;
+  display: flex; align-items: center;
+  pointer-events: none; overflow: hidden; white-space: nowrap;
   transition: opacity .2s;
 }
-.tw-text {
-  font-size: .96rem;
-  color: rgba(255,255,255,.28);
-}
+.tw-text { font-size: .93rem; color: rgba(255,255,255,.26); }
 .tw-cursor {
-  display: inline-block;
-  width: 2px; height: 1.05em;
-  background: rgba(80,160,220,.65);
-  margin-left: 2px;
-  vertical-align: middle;
-  border-radius: 1px;
+  display: inline-block; width: 2px; height: 1.05em;
+  background: rgba(80,160,220,.65); margin-left: 2px;
+  vertical-align: middle; border-radius: 1px;
   animation: blink .85s step-end infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
 .chat-input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  color: #fff;
-  font-family: 'Inter', sans-serif;
-  font-size: .96rem;
-  height: 100%;
-  position: relative;
-  z-index: 2;
+  flex: 1; background: none; border: none; outline: none;
+  color: #fff; font-family: 'Inter', sans-serif;
+  font-size: .93rem; height: 100%;
+  position: relative; z-index: 2;
 }
 .chat-input::placeholder { color: transparent; }
 
-.chat-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  z-index: 2;
-}
+.chat-actions { display: flex; align-items: center; gap: 2px; z-index: 2; flex-shrink: 0; }
+
 .chat-btn {
-  width: 42px; height: 42px;
-  border: none; background: none;
-  border-radius: 999px;
-  cursor: pointer;
+  width: 40px; height: 40px; border: none; background: none;
+  border-radius: 999px; cursor: pointer;
   display: grid; place-items: center;
-  color: rgba(255,255,255,.32);
+  color: rgba(255,255,255,.3);
   transition: background .2s, color .2s;
 }
 .chat-btn:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.6); }
 
 .send-btn {
-  width: 44px; height: 44px;
-  border: none; border-radius: 999px;
-  cursor: pointer;
-  display: grid; place-items: center;
-  background: rgba(255,255,255,.11);
-  color: rgba(255,255,255,.8);
+  width: 42px; height: 42px; border: none; border-radius: 999px;
+  cursor: pointer; display: grid; place-items: center;
+  background: rgba(255,255,255,.11); color: rgba(255,255,255,.8);
   transition: background .2s, transform .15s;
 }
-.send-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
-.send-btn:active { transform: scale(.92); }
+.send-btn:hover { background: rgba(255,255,255,.22); color: #fff; }
+.send-btn:active { transform: scale(.91); }
+.send-btn.loading { animation: spin .7s linear infinite; pointer-events: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @keyframes rise {
   from { opacity:0; transform:translateY(22px); }
@@ -383,28 +438,39 @@ html, body {
 
 <!-- ── HERO ── -->
 <main class="hero">
-  <h1 class="headline">Ask Your Mahaseel AI</h1>
+  <h1 class="headline">Ask Qamhawy AI</h1>
 
   <div class="chat-wrap">
-    <div class="chat-pill">
-      <div class="tw-layer" id="twLayer">
-        <span class="tw-text" id="twText"></span>
-        <span class="tw-cursor"></span>
+    <div class="chat-panel" id="chatPanel">
+
+      <!-- messages area — hidden until first send -->
+      <div class="messages" id="messages"></div>
+
+      <!-- divider — appears after first message -->
+      <div class="panel-divider"></div>
+
+      <!-- input row -->
+      <div class="input-row">
+        <div class="tw-layer" id="twLayer">
+          <span class="tw-text" id="twText"></span>
+          <span class="tw-cursor"></span>
+        </div>
+        <input type="text" class="chat-input" id="chatInput" autocomplete="off"/>
+        <div class="chat-actions">
+          <button class="chat-btn" id="attachBtn" title="Attach">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
+          <button class="send-btn" id="sendBtn">
+            <svg id="sendIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <input type="text" class="chat-input" id="chatInput" autocomplete="off"/>
-      <div class="chat-actions">
-        <button class="chat-btn" title="Attach">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-          </svg>
-        </button>
-        <button class="send-btn" id="sendBtn">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </button>
-      </div>
+
     </div>
   </div>
 </main>
@@ -718,18 +784,15 @@ let twIdx = 0, twCi = 0, twDel = false, twPaused = false;
 
 function typeStep() {
   const cur = prompts[twIdx];
-  if (twPaused) {
-    twPaused = false; twDel = true;
-    setTimeout(typeStep, 60); return;
-  }
+  if (twPaused) { twPaused=false; twDel=true; setTimeout(typeStep,60); return; }
   if (!twDel) {
     twTextEl.textContent = cur.slice(0, ++twCi);
-    if (twCi === cur.length) { twPaused = true; setTimeout(typeStep, twIdx===0?1800:2200); }
-    else setTimeout(typeStep, 36 + Math.random()*24);
+    if (twCi === cur.length) { twPaused=true; setTimeout(typeStep, twIdx===0?1800:2200); }
+    else setTimeout(typeStep, 36+Math.random()*24);
   } else {
     twTextEl.textContent = cur.slice(0, --twCi);
-    if (twCi === 0) { twDel=false; twIdx=(twIdx+1)%prompts.length; setTimeout(typeStep,300); }
-    else setTimeout(typeStep, 15);
+    if (twCi===0) { twDel=false; twIdx=(twIdx+1)%prompts.length; setTimeout(typeStep,300); }
+    else setTimeout(typeStep,15);
   }
 }
 
@@ -737,18 +800,114 @@ inputEl.addEventListener('input', () => { twLayerEl.style.opacity = inputEl.valu
 inputEl.addEventListener('blur',  () => { if (!inputEl.value) twLayerEl.style.opacity = '1'; });
 setTimeout(typeStep, 700);
 
-/* SEND */
+/* ═══════════════════════════════════════
+   CHAT LOGIC
+═══════════════════════════════════════ */
+const messagesEl = document.getElementById('messages');
+const chatPanel  = document.getElementById('chatPanel');
+const sendBtn    = document.getElementById('sendBtn');
+const sendIcon   = document.getElementById('sendIcon');
+let isLoading = false, hasMessages = false;
+
+function activatePanel() {
+  if (!hasMessages) { hasMessages = true; chatPanel.classList.add('has-messages'); }
+}
+
+function scrollBottom() {
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+}
+
+function addMessage(type, text) {
+  activatePanel();
+  const el = document.createElement('div');
+  el.className = type === 'user' ? 'msg-user' : 'msg-ai';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function addTyping() {
+  activatePanel();
+  const el = document.createElement('div');
+  el.className = 'msg-ai';
+  el.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  messagesEl.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function typewriterResponse(el, text, cb) {
+  el.innerHTML = '';
+  let i = 0;
+  function step() {
+    if (i < text.length) { el.textContent += text[i++]; scrollBottom(); setTimeout(step, 16+Math.random()*12); }
+    else if (cb) cb();
+  }
+  step();
+}
+
+// AI responses
+const ai = {
+  mango:   "🥭 Mango grows best above 24°C. In Egypt, plant March–May in well-draining sandy loam. Water every 10–14 days, apply potassium-rich fertilizer during fruiting. Watch for anthracnose — treat with copper-based fungicide.",
+  wheat:   "🌾 Plant Egyptian wheat November–December in the Nile Delta. Recommended varieties: Misr-1 and Sakha-94. Apply 60–80 kg/feddan nitrogen in 3 doses. Harvest late April to May.",
+  tomato:  "🍅 Water tomatoes every 3–5 days during vegetative stage, every 7 days as fruit ripens. Use drip irrigation in Delta regions to prevent blight. Optimal soil EC: 2.5–3.5 dS/m.",
+  soil:    "🌱 Egyptian Delta soils are clay-heavy — add 5–7 tons/feddan of compost to improve drainage. Test pH quarterly; optimal range for most crops is 6.5–7.2.",
+  price:   "📈 Soft wheat: 4,200–4,600 EGP/ton. Corn: 5,800–6,200 EGP/ton. For live B2B pricing updated daily, connect with Mahaseel B2B platform.",
+  disease: "🔬 This looks like fungal leaf spot (Cercospora). Remove infected leaves, apply mancozeb 80% WP at 2.5g/L, repeat every 10 days for 3 cycles. Ensure proper spacing for airflow.",
+  default: "🤖 I'm Qamhawy AI — your agricultural intelligence for Egypt. Ask me about crop selection, irrigation, disease diagnosis, soil analysis, or market prices.",
+};
+
+function getResponse(q) {
+  q = q.toLowerCase();
+  if (q.includes('mango'))                          return ai.mango;
+  if (q.includes('wheat') || q.includes('قمح'))    return ai.wheat;
+  if (q.includes('tomato') || q.includes('irrigat')) return ai.tomato;
+  if (q.includes('soil') || q.includes('report'))  return ai.soil;
+  if (q.includes('price') || q.includes('market')) return ai.price;
+  if (q.includes('disease') || q.includes('leaf') || q.includes('sick')) return ai.disease;
+  return ai.default;
+}
+
 function send() {
-  if (!inputEl.value.trim()) return;
-  const btn = document.getElementById('sendBtn');
-  btn.style.transform = 'scale(.88)';
-  setTimeout(() => btn.style.transform = '', 150);
+  const val = inputEl.value.trim();
+  if (!val || isLoading) return;
+
+  isLoading = true;
+  sendBtn.classList.add('loading');
+  sendIcon.innerHTML = `<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>`;
+
+  addMessage('user', val);
   inputEl.value = '';
   twLayerEl.style.opacity = '1';
-  inputEl.focus();
+
+  const typingEl = addTyping();
+  setTimeout(() => {
+    typingEl.innerHTML = '';
+    typewriterResponse(typingEl, getResponse(val), () => {
+      isLoading = false;
+      sendBtn.classList.remove('loading');
+      sendIcon.innerHTML = `<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>`;
+    });
+  }, 800 + Math.random()*500);
 }
-document.getElementById('sendBtn').addEventListener('click', send);
+
+sendBtn.addEventListener('click', send);
 inputEl.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); send(); } });
+
+// attach — file picker
+document.getElementById('attachBtn').addEventListener('click', () => {
+  if (isLoading) return;
+  const p = document.createElement('input');
+  p.type = 'file'; p.accept = 'image/*';
+  p.onchange = () => {
+    if (!p.files.length) return;
+    addMessage('user', `📎 ${p.files[0].name}`);
+    const t = addTyping();
+    setTimeout(() => { t.innerHTML=''; typewriterResponse(t, ai.disease); }, 1100);
+  };
+  p.click();
+});
 </script>
 </body>
 </html>
